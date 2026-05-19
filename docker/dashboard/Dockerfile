@@ -11,14 +11,14 @@ RUN npm run build -w apps/dashboard && \
 # Production image, copy all the files and run next
 FROM node:22.5.1-alpine3.19 AS runner
 ARG VERSION
-WORKDIR /app
+WORKDIR /app    
 
-ENV NODE_ENV production
+ENV NODE_ENV production 
 ENV NEXT_TELEMETRY_DISABLED 1
 ENV SENTRY_IGNORE_API_RESOLUTION_ERROR 1
 ENV NEXTAUTH_SECRET "nasdlfij34l5kj5k6j5kl6lp+lsick5bi*90!mbk7rc3iy_op1r"
-ENV NEXT_PUBLIC_KARRIO_PUBLIC_URL http://locahost:5002
-ENV NEXT_PUBLIC_DASHBOARD_URL http://localhost:3000
+#ENV NEXT_PUBLIC_KARRIO_PUBLIC_URL http://locahost:5002
+#ENV NEXT_PUBLIC_DASHBOARD_URL http://localhost:3000
 ENV NEXT_PUBLIC_DASHBOARD_VERSION ${VERSION}
 
 RUN addgroup -g 1001 -S nodejs

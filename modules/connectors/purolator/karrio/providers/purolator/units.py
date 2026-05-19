@@ -1,6 +1,9 @@
 import typing
 import karrio.lib as lib
 import karrio.core.units as units
+import logging
+
+logger = logging.getLogger(__name__)
 
 PRESET_DEFAULTS = dict(dimension_unit="IN", weight_unit="LB")
 
@@ -210,16 +213,27 @@ def shipping_services_initializer(
     """
     Apply default values to the given services.
     """
+    logger.debug(f"Initial services: {services}")
+    logger.debug(f"is_international: {is_international}, recipient_country: {recipient_country}")
 
     # When no specific service is requested, set a default.
     if not any([svc in ShippingService for svc in services]):  # type: ignore
         if is_international is False:
             services.append(ShippingService.purolator_express.name)  # type: ignore
+            logger.debug("Appended default domestic service: purolator_express")
         elif recipient_country == "US":
             services.append(ShippingService.purolator_express_us.name)  # type: ignore
+            logger.debug("Appended default US service: purolator_express_us")
         else:
             services.append(ShippingService.purolator_express_international.name)  # type: ignore
+            logger.debug("Appended default international service: purolator_express_international")
 
+    # Ensure there is always at least one valid service
+    if not services:
+        services.append(ShippingService.purolator_express.name)  # type: ignore
+        logger.debug("Appended fallback default service: purolator_express")
+
+    logger.debug(f"Final services: {services}")
     return units.Services(services, ShippingService)
 
 

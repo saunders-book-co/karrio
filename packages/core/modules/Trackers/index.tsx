@@ -195,6 +195,7 @@ export default function TrackersPage(pageProps: any) {
                 <tbody className="trackers-table">
                   <tr>
                     <td className="service is-size-7">SHIPPING SERVICE</td>
+                    {/* this is where we'd insert a new column to show the reference number / order number */}
                     <td className="status"></td>
                     <td className="last-event is-size-7">LAST EVENT</td>
                     <td className="date is-size-7"></td>
@@ -242,6 +243,7 @@ export default function TrackersPage(pageProps: any) {
                           </div>
                         </div>
                       </td>
+                      {/* this is where we'd insert a new column to show the reference number / order number */}
                       <td className="status is-vcentered">
                         <StatusBadge
                           status={tracker.status as string}

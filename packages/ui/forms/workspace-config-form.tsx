@@ -442,7 +442,7 @@ export const WorkspaceConfigForm: React.FC<WorkspaceConfigFormProps> = () => {
         <div className="column is-5 pr-2">
           <p className="subtitle is-6 py-1">Shipping Customs identifiers</p>
           <p className="is-size-7 pr-2">
-            Spee up customs declaration for international shipments.
+            Speed up customs declaration for international shipments.
           </p>
         </div>
 
