@@ -12335,12 +12335,12 @@ components:
           type: string
           format: uri
           nullable: true
-          description: The shipment invoice URL
+          description: The photo proof of delivery image URL
         signature_image_url:
           type: string
           format: uri
           nullable: true
-          description: The shipment invoice URL
+          description: The signature proof of delivery image URL
       required:
       - carrier_id
       - carrier_name

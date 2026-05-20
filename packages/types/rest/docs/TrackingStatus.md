@@ -21,8 +21,8 @@ Name | Type | Description | Notes
 **archived_at** | **string** | Timestamp when the tracker was archived. | [optional] [default to undefined]
 **metadata** | **{ [key: string]: any; }** | User metadata for the tracker | [optional] [default to undefined]
 **messages** | [**Array&lt;Message&gt;**](Message.md) | The list of note or warning messages | [optional] [default to undefined]
-**delivery_image_url** | **string** | The shipment invoice URL | [optional] [default to undefined]
-**signature_image_url** | **string** | The shipment invoice URL | [optional] [default to undefined]
+**delivery_image_url** | **string** | The photo proof of delivery image URL | [optional] [default to undefined]
+**signature_image_url** | **string** | The signature proof of delivery image URL | [optional] [default to undefined]
 
 ## Example
 
