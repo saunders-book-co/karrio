@@ -6711,11 +6711,11 @@ export interface TrackingStatus {
      */
     'messages'?: Array<Message>;
     /**
-     * The shipment invoice URL
+     * The photo proof of delivery image URL
      */
     'delivery_image_url'?: string | null;
     /**
-     * The shipment invoice URL
+     * The signature proof of delivery image URL
      */
     'signature_image_url'?: string | null;
 }

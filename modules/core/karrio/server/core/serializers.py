@@ -1336,13 +1336,13 @@ class TrackingStatus(TrackerDetails):
         required=False,
         allow_blank=True,
         allow_null=True,
-        help_text="The shipment invoice URL",
+        help_text="The photo proof of delivery image URL",
     )
     signature_image_url = serializers.URLField(
         required=False,
         allow_blank=True,
         allow_null=True,
-        help_text="The shipment invoice URL",
+        help_text="The signature proof of delivery image URL",
     )
 
 
