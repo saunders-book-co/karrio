@@ -490,16 +490,11 @@ def shipment_request(
                             shipper.company_name or shipper.contact, max=35
                         ),
                         comments=None,
-                        customerReferences=(
-                            [
-                                fedex.CustomerReferenceType(
-                                    customerReferenceType="INVOICE_NUMBER",
-                                    value=customs.invoice,
-                                )
-                            ]
-                            if customs.invoice
-                            else []
-                        ),
+                        customerReferences=provider_utils.collect_customer_references(
+                            payload,
+                            customs,
+                            options,
+                        )["commercial_invoice"],
                         taxesOrMiscellaneousCharge=None,
                         taxesOrMiscellaneousChargeType=None,
                         freightCharge=None,
@@ -714,7 +709,11 @@ def shipment_request(
                 fedex.RequestedPackageLineItemType(
                     sequenceNumber=None,
                     subPackagingType="OTHER",
-                    customerReferences=[],
+                    customerReferences=provider_utils.collect_customer_references(
+                        payload,
+                        customs,
+                        options,
+                    )["package"],
                     declaredValue=fedex.TotalDeclaredValueType(
                         amount=lib.identity(
                             lib.to_money(package.total_value)
