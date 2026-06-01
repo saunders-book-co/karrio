@@ -26,6 +26,115 @@ class TestFedExPickup(unittest.TestCase):
         # Should produce the same output as PickupRequest (times normalized)
         self.assertEqual(request.serialize(), PickupRequest)
 
+    def test_create_pickup_request_maps_instruction_to_remarks(self):
+        payload_with_instruction = {
+            **PickupPayload,
+            "instruction": "Please ring bell at loading dock.",
+        }
+        request = gateway.mapper.create_pickup_request(
+            models.PickupRequest(**payload_with_instruction)
+        )
+
+        self.assertEqual(
+            request.serialize().get("remarks"),
+            "Please ring bell at loading dock.",
+        )
+
+    def test_create_pickup_request_supports_extra_notification_emails(self):
+        payload_with_emails = {
+            **PickupPayload,
+            "options": {
+                **(PickupPayload.get("options") or {}),
+                "fedex_notification_emails": [
+                    "ops@xyz.com",
+                    "support@xyz.com",
+                ],
+            },
+        }
+        request = gateway.mapper.create_pickup_request(
+            models.PickupRequest(**payload_with_emails)
+        )
+
+        self.assertEqual(
+            request.serialize()
+            .get("pickupNotificationDetail", {})
+            .get("emailDetails"),
+            [
+                {"address": "jane.smith@xyz.com", "locale": "en_US"},
+                {"address": "ops@xyz.com", "locale": "en_US"},
+                {"address": "support@xyz.com", "locale": "en_US"},
+            ],
+        )
+
+    def test_create_pickup_request_supports_email_notification_to_array(self):
+        payload_with_emails = {
+            **PickupPayload,
+            "options": {
+                **(PickupPayload.get("options") or {}),
+                "email_notification_to": [
+                    "cnolan@saundersbook.ca",
+                    "ops@xyz.com",
+                ],
+            },
+        }
+        request = gateway.mapper.create_pickup_request(
+            models.PickupRequest(**payload_with_emails)
+        )
+
+        self.assertEqual(
+            request.serialize()
+            .get("pickupNotificationDetail", {})
+            .get("emailDetails"),
+            [
+                {"address": "jane.smith@xyz.com", "locale": "en_US"},
+                {"address": "cnolan@saundersbook.ca", "locale": "en_US"},
+                {"address": "ops@xyz.com", "locale": "en_US"},
+            ],
+        )
+
+    def test_create_pickup_request_supports_comma_separated_email_notification_to(self):
+        payload_with_emails = {
+            **PickupPayload,
+            "options": {
+                **(PickupPayload.get("options") or {}),
+                "email_notification_to": "cnolan@saundersbook.ca,ops@xyz.com",
+            },
+        }
+        request = gateway.mapper.create_pickup_request(
+            models.PickupRequest(**payload_with_emails)
+        )
+
+        self.assertEqual(
+            request.serialize()
+            .get("pickupNotificationDetail", {})
+            .get("emailDetails"),
+            [
+                {"address": "jane.smith@xyz.com", "locale": "en_US"},
+                {"address": "cnolan@saundersbook.ca", "locale": "en_US"},
+                {"address": "ops@xyz.com", "locale": "en_US"},
+            ],
+        )
+
+    def test_create_pickup_request_raises_for_too_many_notification_emails(self):
+        payload_with_too_many_emails = {
+            **PickupPayload,
+            "options": {
+                **(PickupPayload.get("options") or {}),
+                "fedex_notification_emails": [
+                    "one@xyz.com",
+                    "two@xyz.com",
+                    "three@xyz.com",
+                    "four@xyz.com",
+                    "five@xyz.com",
+                ],
+            },
+        }
+
+        with self.assertRaises(lib.exceptions.FieldError):
+            gateway.mapper.create_pickup_request(
+                models.PickupRequest(**payload_with_too_many_emails)
+            )
+
     def test_create_update_pickup_request(self):
         request = gateway.mapper.create_pickup_update_request(self.PickupUpdateRequest)
 
@@ -38,6 +147,27 @@ class TestFedExPickup(unittest.TestCase):
 
         # Should produce the same output as PickupUpdateRequest (times normalized)
         self.assertEqual(request.serialize(), PickupUpdateRequest)
+
+    def test_create_pickup_request_invalid_package_location(self):
+        invalid_payload = {
+            **PickupPayload,
+            "package_location": "behind the front desk",
+        }
+
+        with self.assertRaises(lib.exceptions.FieldError):
+            gateway.mapper.create_pickup_request(models.PickupRequest(**invalid_payload))
+
+    def test_create_pickup_request_invalid_pickup_address_type(self):
+        invalid_payload = {
+            **PickupPayload,
+            "options": {
+                **(PickupPayload.get("options") or {}),
+                "fedex_pickup_address_type": "BUSINESS",
+            },
+        }
+
+        with self.assertRaises(lib.exceptions.FieldError):
+            gateway.mapper.create_pickup_request(models.PickupRequest(**invalid_payload))
 
     def test_create_cancel_pickup_request(self):
         request = gateway.mapper.create_cancel_pickup_request(self.PickupCancelRequest)
@@ -103,7 +233,7 @@ PickupPayload = {
     "pickup_date": "2013-10-19",
     "ready_time": "11:00",
     "closing_time": "09:20",
-    "package_location": "behind the front desk",
+    "package_location": "FRONT",
     "address": {
         "company_name": "XYZ Inc.",
         "address_line1": "456 Oak Avenue",
@@ -120,7 +250,6 @@ PickupPayload = {
     "parcels": [{"weight": 20, "weight_unit": "LB"}],
     "options": {
         "fedex_carrier_code": "FDXE",
-        "fedex_pickup_address_type": "BUSINESS",
     },
 }
 
@@ -128,7 +257,7 @@ PickupPayloadWithSeconds = {
     "pickup_date": "2013-10-19",
     "ready_time": "11:00:00",  # HH:MM:SS format (some browsers send this)
     "closing_time": "09:20:00",  # HH:MM:SS format
-    "package_location": "behind the front desk",
+    "package_location": "FRONT",
     "address": {
         "company_name": "XYZ Inc.",
         "address_line1": "456 Oak Avenue",
@@ -145,7 +274,6 @@ PickupPayloadWithSeconds = {
     "parcels": [{"weight": 20, "weight_unit": "LB"}],
     "options": {
         "fedex_carrier_code": "FDXE",
-        "fedex_pickup_address_type": "BUSINESS",
     },
 }
 
@@ -154,7 +282,7 @@ PickupUpdatePayload = {
     "pickup_date": "2013-10-19",
     "ready_time": "11:00",
     "closing_time": "09:20",
-    "package_location": "behind the front desk",
+    "package_location": "FRONT",
     "address": {
         "company_name": "XYZ Inc.",
         "address_line1": "456 Oak Avenue",
@@ -171,7 +299,6 @@ PickupUpdatePayload = {
     "parcels": [{"weight": 20, "weight_unit": "LB"}],
     "options": {
         "fedex_carrier_code": "FDXE",
-        "fedex_pickup_address_type": "BUSINESS",
     },
 }
 
@@ -180,7 +307,7 @@ PickupUpdatePayloadWithSeconds = {
     "pickup_date": "2013-10-19",
     "ready_time": "11:00:00",  # HH:MM:SS format
     "closing_time": "09:20:00",  # HH:MM:SS format
-    "package_location": "behind the front desk",
+    "package_location": "FRONT",
     "address": {
         "company_name": "XYZ Inc.",
         "address_line1": "456 Oak Avenue",
@@ -197,7 +324,6 @@ PickupUpdatePayloadWithSeconds = {
     "parcels": [{"weight": 20, "weight_unit": "LB"}],
     "options": {
         "fedex_carrier_code": "FDXE",
-        "fedex_pickup_address_type": "BUSINESS",
     },
 }
 
@@ -254,8 +380,8 @@ PickupRequest = {
     "carrierCode": "FDXE",
     "originDetail": {
         "customerCloseTime": "09:20:00",
-        "packageLocation": "behind the front desk",
-        "pickupAddressType": "BUSINESS",
+        "packageLocation": "FRONT",
+        "pickupAddressType": "OTHER",
         "pickupLocation": {
             "accountNumber": {"value": "2349857"},
             "address": {
@@ -288,8 +414,8 @@ PickupUpdateRequest = {
     "carrierCode": "FDXE",
     "originDetail": {
         "customerCloseTime": "09:20:00",
-        "packageLocation": "behind the front desk",
-        "pickupAddressType": "BUSINESS",
+        "packageLocation": "FRONT",
+        "pickupAddressType": "OTHER",
         "pickupLocation": {
             "accountNumber": {"value": "2349857"},
             "address": {

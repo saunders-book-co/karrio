@@ -8,6 +8,12 @@ import karrio.core.models as models
 import karrio.providers.fedex.error as error
 import karrio.providers.fedex.utils as provider_utils
 import karrio.providers.fedex.units as provider_units
+from karrio.providers.fedex.pickup.utils import (
+    validate_package_location,
+    validate_pickup_address_type,
+    resolve_notification_emails,
+    build_notification_email_details,
+)
 
 
 def parse_pickup_response(
@@ -45,7 +51,9 @@ def pickup_request(
     payload: models.PickupRequest,
     settings: provider_utils.Settings,
 ) -> lib.Serializable:
+    package_location = validate_package_location(payload.package_location)
     address = lib.to_address(payload.address)
+    notification_emails = resolve_notification_emails(address.email, payload.options)
     packages = lib.to_packages(payload.parcels)
     options = lib.units.Options(
         payload.options,
@@ -67,6 +75,9 @@ def pickup_request(
             # fmt: on
         ),
     )
+    pickup_address_type = validate_pickup_address_type(
+        options.fedex_pickup_address_type.state
+    )
 
     # Map unified pickup_type to FedEx pickup type
     # one_time -> ON_CALL, daily/recurring -> REGULAR_STOP
@@ -87,7 +98,7 @@ def pickup_request(
             value=settings.account_number,
         ),
         originDetail=fedex.OriginDetailType(
-            pickupAddressType=options.fedex_pickup_address_type.state,
+            pickupAddressType=pickup_address_type,
             pickupLocation=fedex.PickupLocationType(
                 contact=fedex.ContactType(
                     companyName=address.company_name,
@@ -113,7 +124,7 @@ def pickup_request(
             readyDateTimestamp=f"{payload.pickup_date}T{ready_time}:00Z",
             customerCloseTime=f"{closing_time}:00",
             pickupDateType=options.fedex_pickup_date_type.state,
-            packageLocation=payload.package_location,
+            packageLocation=package_location,
             buildingPart=options.fedex_building_part.state,
             buildingPartDescription=options.fedex_building_part_description.state,
             earlyPickup=options.fedex_early_pickup.state,
@@ -128,7 +139,7 @@ def pickup_request(
         packageCount=len(packages),
         carrierCode=options.fedex_carrier_code.state or "FDXE",
         accountAddressOfRecord=None,
-        remarks=None,
+        remarks=payload.instruction,
         countryRelationships=None,
         pickupType=fedex_pickup_type,
         trackingNumber=None,
@@ -137,16 +148,11 @@ def pickup_request(
         oversizePackageCount=None,
         pickupNotificationDetail=lib.identity(
             fedex.PickupNotificationDetailType(
-                emailDetails=[
-                    fedex.EmailDetailType(
-                        address=address.email,
-                        locale="en_US",
-                    )
-                ],
+                emailDetails=build_notification_email_details(notification_emails),
                 format="TEXT",
                 userMessage=options.fedex_user_message.state,
             )
-            if address.email
+            if any(notification_emails)
             else None
         ),
     )
